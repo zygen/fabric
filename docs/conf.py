@@ -79,6 +79,25 @@ def release_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
     ], []
 roles.register_local_role('release', release_role)
 
+from docutils import nodes
+from sphinx import addnodes
+
+class env(nodes.literal):
+    pass
+
+# "Inline" extension to allow use of Sphinx-specific (vs docutils/ReST)
+# methods.
+def setup(app):
+    app.add_node(env)
+    # 'env' object type for Fabric env var referencing
+    # (not to be confused with Sphinx' builtin :envvar:)
+    app.add_object_type(
+        directivename='env',
+        rolename='env',
+        ref_nodeclass=env,
+        objname='Fabric env var',
+    )
+
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the

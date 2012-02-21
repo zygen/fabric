@@ -14,7 +14,7 @@ Environment as configuration
 ============================
 
 Most of Fabric's behavior is controllable by modifying env variables, such as
-``env.hosts`` (as seen in :ref:`the tutorial <defining-connections>`). Other
+:env:`hosts` (as seen in :ref:`the tutorial <defining-connections>`). Other
 commonly-modified env vars include:
 
 * ``user``: Fabric defaults to your local username when making SSH connections,
@@ -290,16 +290,13 @@ If ``True``, enables forwarding of your local SSH agent to the remote end.
 Set to the hostname part of ``env.host_string`` by ``fab``. For informational
 purposes only.
 
-.. _hosts:
+.. env:: hosts
 
-``hosts``
----------
+    **Default:** ``[]``
 
-**Default:** ``[]``
+    The global host list used when composing per-task host lists.
 
-The global host list used when composing per-task host lists.
-
-.. seealso:: :doc:`execution`
+    .. seealso:: :doc:`execution`
 
 .. _keepalive:
 
