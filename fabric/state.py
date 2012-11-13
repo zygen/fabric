@@ -381,3 +381,8 @@ output = _AliasDict({
     'output': ['stdout', 'stderr'],
     'commands': ['stdout', 'running']
 })
+
+# Used by some decorators & task mechanics.
+memoized_sentinel = '_return_value'
+serial_sentinel = 'serial'
+parallel_sentinel = 'parallel'

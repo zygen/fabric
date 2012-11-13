@@ -1,6 +1,6 @@
 from __future__ import with_statement
 
-from functools import wraps
+from functools import wraps, partial
 import sys
 
 from fabric import state
@@ -123,6 +123,45 @@ class WrappedCallableTask(Task):
     def __getattr__(self, k):
         return getattr(self.wrapped, k)
 
+    def decorator_wrapped_attr(self, attr, get=False, get_default=None):
+        """
+        Implement common hasattr/getattr based protocols on self.wrapped.
+
+        Works with ``@decorator``-driven wrapped functions as well as regular
+        ones.
+
+        For example, memoization decorators might state that 'return_value' is
+        the cache attribute, and thus we need to test for our wrapped function
+        having .return_value. But there is also the possibility of our wrapped
+        function being ``@decorator``-wrapped, in which case we need to test
+        the wrapped function's ``.undecorated`` value instead of the wrapped
+        function itself.
+
+        Finally, in some cases we need to return the value instead of simply
+        asserting whether it exists, in which case we can say ``get=True``.
+
+        Yes, this is all terribly awful and should DIAF.
+        """
+        if get:
+            value = getattr(self.wrapped, attr, get_default)
+        else:
+            value = hasattr(self.wrapped, attr)
+        if hasattr(self.wrapped, 'undecorated'):
+            value = func(self.wrapped.undecorated, attr)
+        return value
+
+    @property
+    def memoized(self):
+        return self.decorator_wrapped_attr(state.memoized_sentinel, get=False)
+
+    @property
+    def serial(self):
+        return self.decorator_wrapped_attr(state.serial_sentinel, get=True, get_default=False)
+
+    @property
+    def parallel(self):
+        return self.decorator_wrapped_attr(state.parallel_sentinel, get=True, get_default=False)
+
 
 def requires_parallel(task):
     """
@@ -134,9 +173,14 @@ def requires_parallel(task):
     * It's *not* been explicitly marked with ``@serial`` *and* the global
       parallel option (``env.parallel``) is set to ``True``.
     """
+    looks_serial = getattr(task, state.serial_sentinel, False)
+    looks_parallel = getattr(task, state.parallel_sentinel, False)
+    if isinstance(task, WrappedCallableTask):
+        looks_serial = task.serial
+        looks_parallel = task.parallel
     return (
-        (state.env.parallel and not getattr(task, 'serial', False))
-        or getattr(task, 'parallel', False)
+        (state.env.parallel and not looks_serial)
+        or looks_parallel
     )
 
 
@@ -151,8 +195,11 @@ def _execute(task, host, my_env, args, kwargs, jobs, queue, multiprocessing):
     """
     Primary single-host work body of execute()
     """
-    # Log to stdout
-    if state.output.running and not hasattr(task, 'return_value'):
+    # Log to stdout if desired & not memoized
+    memoized = hasattr(task, state.memoized_sentinel)
+    if isinstance(task, WrappedCallableTask):
+        memoized = task.memoized
+    if state.output.running and not memoized:
         print("[%s] Executing task '%s'" % (host, my_env['command']))
     # Create per-run env with connection settings
     local_env = to_dict(host)

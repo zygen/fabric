@@ -6,7 +6,7 @@ from __future__ import with_statement
 from functools import wraps
 from Crypto import Random
 
-from fabric import tasks
+from fabric import tasks, state
 from .context_managers import settings
 
 
@@ -129,11 +129,12 @@ def runs_once(func):
     2nd, 3rd, ..., Nth time it is called, and will return the value of the
     original run.
     """
+    sentinel = state.memoized_sentinel
     @wraps(func)
     def decorated(*args, **kwargs):
-        if not hasattr(decorated, 'return_value'):
-            decorated.return_value = func(*args, **kwargs)
-        return decorated.return_value
+        if not hasattr(decorated, sentinel):
+            setattr(decorated, sentinel, func(*args, **kwargs))
+        return getattr(decorated, sentinel)
     decorated = _wrap_as_new(func, decorated)
     # Mark as serial (disables parallelism) and return
     return serial(decorated)
