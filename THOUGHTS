@@ -1,0 +1,15 @@
+* The expected host/host-collection-oriented API can probably be effected via
+  invoke.Context subclasses - since that's exactly what they are (contexts for
+  execution) and Context would provide an existing API for the same shit (like
+  .run; settings/configuration crap; etc).
+* sudo() and local() should probably be implemented as a 'via' kwarg on
+  ctx.run?
+    * How to handle the 'run locally or remotely, intelligently' feature
+      request? I think just by having the class itself be smart about it? I.e.
+      if you're "running on localhost" that implies the Context would be the
+      Invoke default, or some other obviously-not-ssh-related class
+      implementing a local runner.
+        * I guess ambiguity would still exist if you're not using the
+          context-based API - but that should probably not be allowed in Fab
+          itself because it just doesn't fly. You'd be explicitly using
+          invoke.run there? There would be no 'from fabric import run'.

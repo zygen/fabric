@@ -1,36 +1,35 @@
-.. image:: https://secure.travis-ci.org/fabric/fabric.png?branch=master
+.. image:: https://secure.travis-ci.org/fabric/fabric.png?branch=v2
         :target: https://travis-ci.org/fabric/fabric
 
-Fabric is a Python (2.5 or higher) library and command-line tool for
-streamlining the use of SSH for application deployment or systems
-administration tasks.
+Fabric is a Python 2.6-3.x compatible library for executing remote system
+commands via the SSH protocol. It builds on top of `Paramiko
+<http://paramiko.org>`_'s low-level SSH functionality, and optionally leverages
+`Invoke <http://pyinvoke.org>`_ for command-line task execution.
 
-It provides a basic suite of operations for executing local or remote shell
-commands (normally or via ``sudo``) and uploading/downloading files, as well as
-auxiliary functionality such as prompting the running user for input, or
-aborting execution.
- 
-Typical use involves creating a Python module containing one or more functions,
-then executing them via the ``fab`` command-line tool. Below is a small but
-complete "fabfile" containing a single task::
+Our feature set focuses on three core areas:
 
-    from fabric.api import run
+* **Execution**: invoking remote shell commands (directly or via wrappers like
+  ``sudo``) and uploading/downloading files and directories.
+* **Orchestration**: determining what execution code is run against which
+  remote servers, and in what fashion (serially, in parallel, etc).
+* **SSH behavior**: high level control over the various facets of the SSH
+  ecosystem such as config file loading, connection retries, gateway support
+  and so forth.
 
-    def host_type():
-        run('uname -s')
+Core example::
 
-Once a task is defined, it may be run on one or more servers, like so::
+    >> from fabric.blah import Host
+    >> result = Host('foo.com').run('command')
+    <no stdout/err printed by default!>
+    >> show shit on result
 
-    $ fab -H localhost,linuxbox host_type
-    [localhost] run: uname -s
-    [localhost] out: Darwin
-    [linuxbox] run: uname -s
-    [linuxbox] out: Linux
+Function-oriented example::
 
-    Done.
-    Disconnecting from localhost... done.
-    Disconnecting from linuxbox... done.
+    >> from fabric import Host
+    >> def mytask(host):
+    >>     host.run('command')
+    >> Host('foo.com').execute(mytask)
 
-In addition to use via the ``fab`` tool, Fabric's components may be imported
-into other Python code, providing a Pythonic interface to the SSH protocol
-suite at a higher level than that provided by e.g. the ``ssh`` library (which Fabric itself uses.)
+Host collection/list example
+
+CLI (invoke) leveraging example
