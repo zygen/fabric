@@ -16,19 +16,26 @@ Our feature set focuses on three core areas:
   ecosystem such as config file loading, connection retries, gateway support
   and so forth.
 
-Core example::
+Base-case example::
 
-    >> from fabric.blah import Host
-    >> result = Host('foo.com').run('command')
-    <no stdout/err printed by default!>
-    >> show shit on result
+    >>> from fabric import Host
+    >>> result = Host('example.com').run('uname -sr')
+    >>> print(result.stdout)
+    Linux 2.6.32-5-xen-amd64
+    >>> print(result.exited)
+    0
 
-Function-oriented example::
+Function-oriented example, which also shows a more detailed use case::
 
-    >> from fabric import Host
-    >> def mytask(host):
-    >>     host.run('command')
-    >> Host('foo.com').execute(mytask)
+    >>> from fabric import Host
+    >>> def disk_usage(host):
+    ...     result = host.run('df /dev/sda1')
+    ...     header, info = result.stdout.splitlines()
+    ...     cols = header.split()
+    ...     return info.split()[cols.index('Use%')]
+    >>> percentile = Host('foo.com').execute(disk_usage)
+    >>> print("foo.com sda1 is {0} full".format(percentile))
+    foo.com sda1 is 18% full
 
 Host collection/list example
 
