@@ -1,12 +1,19 @@
 #!/usr/bin/env python
 
-import sys
+# Support setuptools or distutils
+try:
+    from setuptools import setup, find_packages
+except ImportError:
+    from distutils.core import setup, find_packages
 
-from setuptools import setup, find_packages
+# Version info -- read without importing
+_locals = {}
+with open('fabric/_version.py') as fp:
+    exec(fp.read(), None, _locals)
+version = _locals['__version__']
+branch = _locals['__branch__']
 
-from fabric.version import get_version
-
-
+# Description junk
 readme = open('README.rst').read()
 
 long_description = """
@@ -23,20 +30,18 @@ pip, with `pip install fabric==dev`.
 
 ----
 
-For more information, please see the Fabric website or execute ``fab --help``.
-""" % (get_version('branch'), readme)
+For more information, please see the Fabric website.
+""" % (branch, readme)
 
 setup(
     name='Fabric',
-    version=get_version('short'),
-    description='Fabric is a simple, Pythonic tool for remote execution and deployment.',
+    version=version,
+    description='A high level SSH library',
     long_description=long_description,
     author='Jeff Forcier',
     author_email='jeff@bitprophet.org',
     url='http://fabfile.org',
     packages=find_packages(),
-    test_suite='nose.collector',
-    tests_require=['nose', 'fudge<1.0'],
     install_requires=['paramiko>=1.10.0'],
     entry_points={
         'console_scripts': [
@@ -53,10 +58,10 @@ setup(
           'Operating System :: Unix',
           'Operating System :: POSIX',
           'Programming Language :: Python',
-          'Programming Language :: Python :: 2.5',
           'Programming Language :: Python :: 2.6',
+          'Programming Language :: Python :: 2.7',
+          'Programming Language :: Python :: 3.3',
           'Topic :: Software Development',
-          'Topic :: Software Development :: Build Tools',
           'Topic :: Software Development :: Libraries',
           'Topic :: Software Development :: Libraries :: Python Modules',
           'Topic :: System :: Clustering',
