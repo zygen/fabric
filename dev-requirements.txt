@@ -1,12 +1,6 @@
-# You should already have the dev version of Paramiko and your local Fabric
-# checkout installed! Stable Paramiko may not be sufficient!
-
-# Test runner/testing utils
-nose
-# Rudolf adds color to the output of 'fab test'. This is a custom fork
-# addressing Python 2.7 and Nose's 'skip' plugin compatibility issues.
--e git+https://github.com/bitprophet/rudolf#egg=rudolf
+# Test runner / test utils
+spec>=0.11.1,<0.12
 # Mocking library
-Fudge < 1.0
+mock>=1.0.1,<1.1
 # Documentation generation
-Sphinx >= 0.6
+Sphinx>=1.2,<1.3
