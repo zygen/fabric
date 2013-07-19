@@ -13,3 +13,43 @@
           context-based API - but that should probably not be allowed in Fab
           itself because it just doesn't fly. You'd be explicitly using
           invoke.run there? There would be no 'from fabric import run'.
+
+
+## Context managers
+
+### cd, lcd
+
+    cxn.run('pwd') # => /home/user
+    cxn.cd('projects')
+    cxn.run('pwd') # => /home/user/projects
+    cxn.cd('-') # ugggh
+    cxn.run('pwd') # => /home/user
+
+OR
+
+    cxn.run('pwd') # => /home/user
+    with cxn.cd('projects'):
+        cxn.run('pwd') # => /home/user/projects
+    cxn.run('pwd') # => /home/user
+
+How to implement?
+
+* result of cd() must be an obj whose enter/exit tickle the cxn obj's 'my pwd'
+  state
+* can't be the cxn itself because there's only one enter/exit and it could be
+  'in' N arbitrary possible context blocks at any time
+* thus must be some simple obj that has reference to cxn + enter/exit
+* many of these will get generated and be floating around?
+* will they fuck up in threading/etc?
+
+### hide, show
+
+### path, prefix
+
+### remote_tunnel
+
+### settings
+
+### shell_env
+
+### warn_only
