@@ -44,11 +44,21 @@ How to implement?
 
 ### hide, show
 
+Assuming hiding/showing is implemented similar to fab 1 (BIG assumption) - same as cd, just tickles context state.
+
+Should really be handled by Invoke, eh?
+
 ### path, prefix
+
+These should also be more generic and Invoke-ish since they can apply to command running in general...
 
 ### remote_tunnel
 
+I forget what this even does
+
 ### settings
+
+hrrrgh
 
 ### shell_env
 
