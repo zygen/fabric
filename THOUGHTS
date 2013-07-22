@@ -13,44 +13,68 @@
           context-based API - but that should probably not be allowed in Fab
           itself because it just doesn't fly. You'd be explicitly using
           invoke.run there? There would be no 'from fabric import run'.
+    * Does not solve the situation where one's 'host' is literally 'localhost'
+      (versus being unspecified/blank as in Fab 1 ) but I don't think that was
+      the common case - the common case was running a task function with no
+      host list.
 
 
 ## Context managers
 
+General implementation: these methods on Context (or Connection, etc) spawn a
+new object which is basically a callback of sorts - it's given a link to the
+context, the argument(s) given to the method (e.g. the path to cd to; the
+settings to change; etc) and some way of altering that context on both
+__enter__ and __exit__.
+
+The "obvious" way of doing the latter is:
+
+* pass an attribute name + a mutator function to this new object
+* it then backs up, to itself, the current value at time of __enter__,
+  replacing it with the mutated value
+* in __exit__ it updates the parent with the older, preserved attribute value.
+
+Could alter this slightly by having the mutator functions (lamdas) implemented
+as other methods on Context and pass their name to the sub-object. However, the
+sub-object would still need the attribute info so it could perform backup; and
+restoration would then require setters which just feels silly.
+
 ### cd, lcd
 
-    cxn.run('pwd') # => /home/user
-    cxn.cd('projects')
-    cxn.run('pwd') # => /home/user/projects
-    cxn.cd('-') # ugggh
-    cxn.run('pwd') # => /home/user
+As now, implemented with a list of paths that gets join'd on use.
 
-OR
+May want to rename cd() to rcd() - people continue to be confused by cd() and
+assume it applies locally.
 
-    cxn.run('pwd') # => /home/user
-    with cxn.cd('projects'):
-        cxn.run('pwd') # => /home/user/projects
-    cxn.run('pwd') # => /home/user
-
-How to implement?
-
-* result of cd() must be an obj whose enter/exit tickle the cxn obj's 'my pwd'
-  state
-* can't be the cxn itself because there's only one enter/exit and it could be
-  'in' N arbitrary possible context blocks at any time
-* thus must be some simple obj that has reference to cxn + enter/exit
-* many of these will get generated and be floating around?
-* will they fuck up in threading/etc?
+lcd() should be something implemented in Invoke (and stands to reason cd()
+would also - just w/ different target setting names so they remain distinct.)
 
 ### hide, show
 
-Assuming hiding/showing is implemented similar to fab 1 (BIG assumption) - same as cd, just tickles context state.
+Assuming hiding/showing is implemented similar to fab 1 (BIG assumption) - same
+as cd, just tickles context state.
 
-Should really be handled by Invoke, eh?
+Should really be handled by Invoke, eh? And ideally log-based in some fashion.
+
+May want to split things up:
+
+* stdout/err, due to being stream based, are simply local defaults for run()'s
+  kwargs. So these might just become regular settings and not deserving of
+  their own contextmanager methods?
+* Everything else are local line-based output levels and would thus just fit
+  well into a real logging framework. So would need to implement that in a way
+  that fits w/ the logging setup. So that might also be slightly different and
+  live under a single, non-hide/show set of methods (tho possibly still context
+  manager?)
+
+tl;dr do we even want contextmanagers for this? They started out as the ONLY
+way to hide things, but now that the API can do it per-run(), it may not make a
+ton of sense.
 
 ### path, prefix
 
-These should also be more generic and Invoke-ish since they can apply to command running in general...
+These should also be more generic and Invoke-ish since they can apply to
+command running in general. But probably remain lists under the hood.
 
 ### remote_tunnel
 
