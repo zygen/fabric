@@ -78,7 +78,9 @@ command running in general. But probably remain lists under the hood.
 
 ### remote_tunnel
 
-I forget what this even does
+Spawns new channels & sockets to handle the port forwards, tracks those in apparently-global state within fabric.contextmanagers (i.e. just inside the function itself? not sure why that works, the body should rerun every time the context manager is used) and hands a ThreadHandler to Paramiko which actually spins it up to forward ports.
+
+So, probably needs a decently sized rewrite to be clean n such; only real Fab stuff it uses is the connection dict / env.host_string.
 
 ### settings
 
