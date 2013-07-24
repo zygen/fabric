@@ -84,8 +84,14 @@ So, probably needs a decently sized rewrite to be clean n such; only real Fab st
 
 ### settings
 
-hrrrgh
+Likely replaced by whatever settings API is exposed in Context. Maybe try to get a sense of what settings folks frequently use it for now, besides nesting hide/show + warn_only + host_string. Suspect that would be bulk of it?
+
+Then again the ability to run with temporarily different context for arbitrary stuff is handy. Meh.
 
 ### shell_env
 
+Tracks a dict in Context, same as lcd/cd would with their lists? Once again, can probably roll into regular settings-y things.
+
 ### warn_only
+
+Same as hide/show re: stdout/err - might not _need_ to be contextmanager anymore, just given as per-run() kwarg or tickled in Context settings junk.
