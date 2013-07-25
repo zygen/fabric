@@ -95,3 +95,32 @@ Tracks a dict in Context, same as lcd/cd would with their lists? Once again, can
 ### warn_only
 
 Same as hide/show re: stdout/err - might not _need_ to be contextmanager anymore, just given as per-run() kwarg or tickled in Context settings junk.
+
+
+## Decorators
+
+### hosts
+
+Currently, tells execute() what the default host list should be if nothing is given. Almost entirely oriented around the CLI use case. Does it make any sense in the library case?
+
+Thought experiment: if we went the "Fab just a lib, use it with invoke" route...how would @hosts/@roles work? I think they'd just be hints to Invoke's Executor saying "please vectorize over this value when you call this task", right? (Would need to really be saying "vectorize over this value, turn it into Connection/Batch, then stuff in as first argument".)
+
+That puts them on the same footing as any other vectorization. Meaning - they can go away in favor of whatever easy-vectorization option is added to Invoke. How would THAT look?
+
+* yet moar args to @task?
+* a second decorator used in tandem with @task?
+* a function or class used to create another "task" that is a combo of a
+  regular task + the vectorization? (That's really not THAT different from a
+  new decorator, other than it not replacing the original task.)
+
+### roles
+
+### runs_once
+
+### serial
+
+### parallel
+
+### task
+
+### with_settings
