@@ -99,13 +99,21 @@ Same as hide/show re: stdout/err - might not _need_ to be contextmanager anymore
 
 ## Decorators
 
-### hosts
+### hosts, roles
 
-Currently, tells execute() what the default host list should be if nothing is given. Almost entirely oriented around the CLI use case. Does it make any sense in the library case?
+Currently, tells execute() what the default host list should be if nothing is
+given. Almost entirely oriented around the CLI use case. Does it make any sense
+in the library case?
 
-Thought experiment: if we went the "Fab just a lib, use it with invoke" route...how would @hosts/@roles work? I think they'd just be hints to Invoke's Executor saying "please vectorize over this value when you call this task", right? (Would need to really be saying "vectorize over this value, turn it into Connection/Batch, then stuff in as first argument".)
+Thought experiment: if we went the "Fab just a lib, use it with invoke"
+route...how would @hosts/@roles work? I think they'd just be hints to Invoke's
+Executor saying "please vectorize over this value when you call this task",
+right? (Would need to really be saying "vectorize over this value, turn it into
+Connection/Batch, then stuff in as first argument".)
 
-That puts them on the same footing as any other vectorization. Meaning - they can go away in favor of whatever easy-vectorization option is added to Invoke. How would THAT look?
+That puts them on the same footing as any other vectorization. Meaning - they
+can go away in favor of whatever easy-vectorization option is added to Invoke.
+How would THAT look?
 
 * yet moar args to @task?
 * a second decorator used in tandem with @task?
@@ -113,9 +121,42 @@ That puts them on the same footing as any other vectorization. Meaning - they ca
   regular task + the vectorization? (That's really not THAT different from a
   new decorator, other than it not replacing the original task.)
 
-### roles
-
 ### runs_once
+
+Should not be necessary? Guess it ties into "global host list" - if a given
+session can be given a default host list for vectorizing tasks, then we do need
+a way to indicate whether a task should be exempt from that. E.g. if we still
+allow this:
+
+    $ fab -H a,b,c runonce hostcrap morehostcrap
+
+then `runonce` does need a way to tell the CLI junk that it should not be run
+once each for the host list.
+
+If we assume all tasks are basically contextualized and take a context, "local"
+or "runs once" tasks still look no different from "normal" ones. So it's the
+execution mechanism that has to differentiate between "I run this N times for
+this vector of Connections" versus "I run this once with a single
+non-connection-oriented Context".
+
+Feels like cleanest solution is to do away with "global" host lists entirely
+and force ALL such invocations to be what in Fab 1 are "meta" tasks, so e.g.:
+
+    $ fab runonce hostcrap -H a,b,c morehostcrap -H a,b,c
+
+Which is repetitive, so perhaps:
+
+    $ fab runsonce multiplex --hosts a,b,c --tasks hostcrap,morehostcrap
+
+Where `multiplex` (shit name but w/e) would be a builtin that basically just
+does:
+
+    def multiplex(ctx, hosts, tasks):
+        for task in tasks:
+            t = ctx.get_task(task)
+            b = Batch(*hosts)
+            b.execute(t, with_context=ctx)
+
 
 ### serial
 
