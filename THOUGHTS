@@ -121,7 +121,7 @@ How would THAT look?
   regular task + the vectorization? (That's really not THAT different from a
   new decorator, other than it not replacing the original task.)
 
-### runs_once
+### runs_once, parallel, serial
 
 Should not be necessary? Guess it ties into "global host list" - if a given
 session can be given a default host list for vectorizing tasks, then we do need
@@ -133,35 +133,86 @@ allow this:
 then `runonce` does need a way to tell the CLI junk that it should not be run
 once each for the host list.
 
-If we assume all tasks are basically contextualized and take a context, "local"
-or "runs once" tasks still look no different from "normal" ones. So it's the
-execution mechanism that has to differentiate between "I run this N times for
-this vector of Connections" versus "I run this once with a single
-non-connection-oriented Context".
+If we assume all Fabric tasks are contextualized, "local" or "runs once" tasks
+still look no different from "normal" ones. So it's the execution mechanism
+that has to differentiate between "I run this N times for this vector of
+Connections" versus "I run this once with a single non-connection-oriented
+Context".
 
 Feels like cleanest solution is to do away with "global" host lists entirely
-and force ALL such invocations to be what in Fab 1 are "meta" tasks, so e.g.:
+and force ALL such invocations to be what in Fab 1 are "meta" tasks. I.e. if
+you had tasks 'foo' and 'bar' and wanted them to both run on the same host
+list, and task 'biz' that should run only once, you would need to write task
+'go' like so:
 
-    $ fab runonce hostcrap -H a,b,c morehostcrap -H a,b,c
+    @task
+    def go(ctx, hosts):
+        b = Batch(ctx, hosts)
+        b.execute(foo)
+        b.execute(bar)
+        ctx.execute(biz)
 
-Which is repetitive, so perhaps:
+and invoke:
 
-    $ fab runsonce multiplex --hosts a,b,c --tasks hostcrap,morehostcrap
+    $ fab go --hosts a,b,c
 
-Where `multiplex` (shit name but w/e) would be a builtin that basically just
-does:
+This removes the ability to arbitrarily change up which tasks you run on which
+hosts, all at the CLI level, so not 100% sure.
 
-    def multiplex(ctx, hosts, tasks):
-        for task in tasks:
-            t = ctx.get_task(task)
-            b = Batch(*hosts)
-            b.execute(t, with_context=ctx)
+Main problem with @runs_once (and the other decorators) is they make it hard to
+tell who should override who - normally CLI rules all, and @runs_once in Fab 1
+is one of the unusual things that inverts control. It's impossible to run a
+@runs_once task more than one time from the CLI.
+
+Perhaps we have Fabric contexts splice in common per-task options
+automatically, so you could do e.g.::
+
+    $ fab -H a,b,c foo bar biz --once
+
+Here, the Executor would automatically vectorize tasks over the core host list,
+but if it saw 'once=True', it would not do so. Or alternately, the part of
+Invoke that sets up the Executor would just select the default instead of the
+Fabric host-running one? That also works well for choosing serial, parallel etc
+on a per-task basis.
+
+So e.g.:
+
+    fab -H a,b,c --parallel foo bar biz --once
+
+or
+
+    fab -H a,b,c --parallel foo bar biz --serial baz --once
+
+Where the core options set the default executor and per-task flags override. 
+
+(--parallel etc would be sugar for --executor=parallel or maybe
+--strategy=parallel.)
+
+ANYWAY - so with the above strategy, this gives us complete CLI control over invocation, and we can have a per-task (kwarg-level probably) way of setting the default that task "wants" to be run as. So we'd still have @runs_once, but it's normalized now and on the same footing as parallel/serial.
+
+#### More thoughts on executing
+
+In Invoke, Executor currently is responsible for:
+
+* taking collection + context
+* looking up a task name in a collection
+* calling it with CLI flag-args and the context
+* calling its pre- and post- tasks before and/or after
+
+and it is created once and then used throughout the 'session' (i.e. each task/context becomes my_executor.execute(task, ...)).
+
+Idea was to subclass it to add more things like how to deal with pre/post, how to run in serial/parallel, etc.
+
+However this doesn't fly with switching up executor/strategy per-task, as above. Would want to instantiate the executor once per parser context, at least niavely. However we then lose ability to track how many times a given task has been called 'globally' which is almost definitely required for nontrivial pre/post/dependency shit.
+
+So perhaps we split things up a bit, with collection management (including call tracking) in one object, and actual invocation/execution in another. Main problem is this requires communication, so we need a way for the latter to inform the former that it just ran tasks foo, bar, biz and baz N times.
 
 
-### serial
-
-### parallel
 
 ### task
+
+Simply a subclass or wrapper for Invoke's. Would have contextualized=True always (perhaps not even letting you set it to False - a "Fabric" task is meaningless without its host context).
+
+May end up just being a straight reimport of Invoke's, if all functionality can be pushed therein (like strategy selection).
 
 ### with_settings
