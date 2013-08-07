@@ -94,6 +94,7 @@ class HostConnectionCache(dict):
         key = normalize_to_string(key)
         sock = None
         proxy_command = ssh_config().get('proxycommand', None)
+        proxy_command = os.path.expanduser(proxy_command)
         if env.gateway:
             gateway = normalize_to_string(env.gateway)
             # Ensure initial gateway connection
